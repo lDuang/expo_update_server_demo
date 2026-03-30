@@ -10,6 +10,10 @@ export function assetRoutes(storage: LocalStorage) {
     const updateId = c.req.param('updateId');
     const assetPath = c.req.param('assetPath');
 
+    if (!assetPath) {
+      return c.json({ error: 'Asset path required' }, 400);
+    }
+
     const filePath = await storage.getAssetPath(channel, updateId, assetPath);
 
     try {

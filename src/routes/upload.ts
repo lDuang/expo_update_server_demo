@@ -1,49 +1,28 @@
 import { Hono } from 'hono';
 import { LocalStorage } from '../storage/local.js';
 import { v4 as uuidv4 } from 'uuid';
-import multer from 'multer';
-import { Readable } from 'stream';
-
-const upload = multer({ storage: multer.memoryStorage() });
-
-// Multer 中间件包装
-function multerMiddleware() {
-  return async (c: any, next: any) => {
-    return new Promise((resolve, reject) => {
-      upload.single('bundle')(c.req.raw as any, {} as any, (err: any) => {
-        if (err) {
-          console.error('Multer error:', err);
-          reject(err);
-        } else {
-          resolve(next());
-        }
-      });
-    });
-  };
-}
 
 export function uploadRoutes(storage: LocalStorage) {
   const routes = new Hono();
 
-  routes.post('/', multerMiddleware(), async (c) => {
+  routes.post('/', async (c) => {
     console.log('📥 Received upload request');
     
     try {
-      const req: any = c.req.raw;
-      const file = req.file;
-      const body = req.body as Record<string, any>;
+      const formData = await c.req.formData();
 
-      const channel = body?.channel || 'main';
-      const runtimeVersion = body?.runtimeVersion;
-      const message = body?.message || '';
-      const criticalIndex = body?.criticalIndex || '0';
+      const channel = formData.get('channel') as string || 'main';
+      const runtimeVersion = formData.get('runtimeVersion') as string;
+      const message = formData.get('message') as string;
+      const criticalIndex = formData.get('criticalIndex') as string;
+      const bundle = formData.get('bundle') as File;
 
       console.log(`   Channel: ${channel}`);
       console.log(`   Runtime: ${runtimeVersion}`);
-      console.log(`   Message: ${message}`);
-      console.log(`   File: ${file?.originalname || 'bundle.hbc'} (${file?.size || 0} bytes)`);
+      console.log(`   Message: ${message || 'N/A'}`);
+      console.log(`   File: ${bundle?.name || 'bundle.hbc'}`);
 
-      if (!file || !runtimeVersion) {
+      if (!bundle || !runtimeVersion) {
         console.log('   ❌ Missing required fields');
         return c.json({ error: 'Missing required fields' }, 400);
       }
@@ -62,7 +41,7 @@ export function uploadRoutes(storage: LocalStorage) {
         assetPaths: [],
       };
 
-      const bundleBuffer = Buffer.from(file.buffer);
+      const bundleBuffer = Buffer.from(await bundle.arrayBuffer());
       console.log(`   Bundle size: ${(bundleBuffer.length / 1024).toFixed(2)} KB`);
 
       await storage.saveUpdate(metadata, bundleBuffer, new Map());
