@@ -1,13 +1,13 @@
-FROM oven/bun:1 AS builder
+FROM node:20-slim AS builder
 
 WORKDIR /app
 
 COPY package.json ./
-RUN bun install --frozen-lockfile || bun install
+RUN npm install --frozen-lockfile || npm install
 
 COPY . .
 
-FROM oven/bun:1-slim
+FROM node:20-slim
 
 WORKDIR /app
 
@@ -16,4 +16,4 @@ COPY --from=builder /app ./
 
 EXPOSE 3001
 
-CMD ["bun", "run", "src/index.ts"]
+CMD ["npm", "run", "start"]
