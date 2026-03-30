@@ -8,16 +8,24 @@ export function manifestRoutes(storage: LocalStorage) {
   // 获取指定 channel 的最新 manifest
   routes.get('/:channel', async (c) => {
     const channel = c.req.param('channel');
+    console.log(`📋 Manifest request for channel: ${channel}`);
+    
     const latestUpdateId = await storage.getLatestUpdateId(channel);
 
     if (!latestUpdateId) {
+      console.log(`   ⚠️ No updates available for this channel`);
       return c.json({ error: 'No updates available for this channel' }, 404);
     }
 
     const metadata = await storage.getUpdateMetadata(channel, latestUpdateId);
     if (!metadata) {
+      console.log(`   ⚠️ Update metadata not found`);
       return c.json({ error: 'Update metadata not found' }, 404);
     }
+
+    console.log(`   ✅ Found update: ${metadata.id}`);
+    console.log(`   Runtime: ${metadata.runtimeVersion}`);
+    console.log(`   Message: ${metadata.message || 'N/A'}`);
 
     const baseUrl = c.req.header('host') || 'localhost:3001';
     const protocol = c.req.header('x-forwarded-proto') || 'http';
@@ -47,7 +55,7 @@ export function manifestRoutes(storage: LocalStorage) {
     // 设置缓存控制
     c.header('Cache-Control', 'no-cache');
     c.header('Content-Type', 'application/json');
-    
+
     return c.json(manifest);
   });
 
