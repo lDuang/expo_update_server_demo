@@ -2,6 +2,7 @@ import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
+import { bodyParser } from 'hono/body-parser';
 import { manifestRoutes } from './routes/manifest.js';
 import { assetRoutes } from './routes/assets.js';
 import { uploadRoutes } from './routes/upload.js';
@@ -16,6 +17,7 @@ await storage.init();
 // 中间件
 app.use('*', cors());
 app.use('*', logger());
+app.use('/upload', bodyParser());
 
 // 路由
 app.route('/manifest', manifestRoutes(storage));
