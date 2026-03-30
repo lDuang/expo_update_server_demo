@@ -7,15 +7,16 @@ export function uploadRoutes(storage: LocalStorage) {
 
   routes.post('/', async (c) => {
     console.log('📥 Received upload request');
+    console.log('   Content-Type:', c.req.header('content-type'));
     
     try {
-      const formData = await c.req.parseBody();
+      const formData = await c.req.formData();
 
-      const channel = formData.channel as string || 'main';
-      const runtimeVersion = formData.runtimeVersion as string;
-      const message = formData.message as string;
-      const criticalIndex = formData.criticalIndex as string;
-      const bundle = formData.bundle as File;
+      const channel = formData.get('channel') as string || 'main';
+      const runtimeVersion = formData.get('runtimeVersion') as string;
+      const message = formData.get('message') as string;
+      const criticalIndex = formData.get('criticalIndex') as string;
+      const bundle = formData.get('bundle') as File;
 
       console.log(`   Channel: ${channel}`);
       console.log(`   Runtime: ${runtimeVersion}`);
@@ -29,16 +30,7 @@ export function uploadRoutes(storage: LocalStorage) {
       const updateId = uuidv4();
       const assetPaths: string[] = [];
 
-      // 处理 assets
-      const assets = formData.assets;
-      if (assets) {
-        const assetFiles = Array.isArray(assets) ? assets : [assets];
-        for (const assetFile of assetFiles) {
-          if (assetFile instanceof File) {
-            assetPaths.push(assetFile.name);
-          }
-        }
-      }
+      console.log(`   Generated Update ID: ${updateId}`);
 
       const metadata = {
         id: updateId,
@@ -51,25 +43,13 @@ export function uploadRoutes(storage: LocalStorage) {
         assetPaths,
       };
 
-      console.log(`   Generated Update ID: ${updateId}`);
-
       // 读取文件 buffer
       const bundleBuffer = Buffer.from(await bundle.arrayBuffer());
-      const assetBuffers = new Map<string, Buffer>();
-
-      if (assets) {
-        const assetFiles = Array.isArray(assets) ? assets : [assets];
-        for (const assetFile of assetFiles) {
-          if (assetFile instanceof File) {
-            assetBuffers.set(assetFile.name, Buffer.from(await assetFile.arrayBuffer()));
-          }
-        }
-      }
 
       console.log(`   Bundle size: ${(bundleBuffer.length / 1024).toFixed(2)} KB`);
       console.log(`   Assets: ${assetPaths.length} files`);
 
-      await storage.saveUpdate(metadata, bundleBuffer, assetBuffers);
+      await storage.saveUpdate(metadata, bundleBuffer, new Map());
 
       console.log(`   ✅ Upload saved successfully`);
 
