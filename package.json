@@ -1,0 +1,14 @@
+{
+  "name": "update-server",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "bun run --watch src/index.ts",
+    "start": "bun run src/index.ts"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.8.0",
+    "hono": "^4.0.0",
+    "uuid": "^9.0.0"
+  }
+}
