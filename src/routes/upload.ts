@@ -10,13 +10,13 @@ export function uploadRoutes(storage: LocalStorage) {
     console.log('   Content-Type:', c.req.header('content-type'));
     
     try {
-      const formData = await c.req.formData();
-
-      const channel = formData.get('channel') as string || 'main';
-      const runtimeVersion = formData.get('runtimeVersion') as string;
-      const message = formData.get('message') as string;
-      const criticalIndex = formData.get('criticalIndex') as string;
-      const bundle = formData.get('bundle') as File;
+      const body = c.req.parsedBody as Record<string, any>;
+      const bundle = body.bundle as File;
+      
+      const channel = body.channel as string || 'main';
+      const runtimeVersion = body.runtimeVersion as string;
+      const message = body.message as string;
+      const criticalIndex = body.criticalIndex as string;
 
       console.log(`   Channel: ${channel}`);
       console.log(`   Runtime: ${runtimeVersion}`);
@@ -28,8 +28,6 @@ export function uploadRoutes(storage: LocalStorage) {
       }
 
       const updateId = uuidv4();
-      const assetPaths: string[] = [];
-
       console.log(`   Generated Update ID: ${updateId}`);
 
       const metadata = {
@@ -40,14 +38,13 @@ export function uploadRoutes(storage: LocalStorage) {
         criticalIndex: criticalIndex ? parseInt(criticalIndex, 10) : undefined,
         createdAt: new Date().toISOString(),
         bundlePath: `bundles/${channel}/${updateId}/bundle.js`,
-        assetPaths,
+        assetPaths: [],
       };
 
       // 读取文件 buffer
       const bundleBuffer = Buffer.from(await bundle.arrayBuffer());
 
       console.log(`   Bundle size: ${(bundleBuffer.length / 1024).toFixed(2)} KB`);
-      console.log(`   Assets: ${assetPaths.length} files`);
 
       await storage.saveUpdate(metadata, bundleBuffer, new Map());
 
